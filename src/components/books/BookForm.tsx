@@ -15,6 +15,16 @@ import {
   CardHeader,
   CardTitle,
 } from '../ui/card';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../ui/alert-dialog';
 import { useToast } from '../../hooks/useToast';
 import { Loading } from '../ui/loading';
 
@@ -41,6 +51,7 @@ export function BookForm() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const {
     register,
@@ -121,6 +132,28 @@ export function BookForm() {
 
   const handleCancel = () => {
     navigate('/books');
+  };
+
+  const handleDelete = async () => {
+    if (!bookId) return;
+
+    setIsLoading(true);
+    try {
+      await bookService.deleteBook(bookId);
+      toast({
+        title: 'Success',
+        description: 'Book deleted successfully',
+      });
+      navigate('/books');
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: (error as Error).message,
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   if (isLoading && isEditMode) {
@@ -240,29 +273,60 @@ export function BookForm() {
               )}
             </div>
           </CardContent>
-          <CardFooter className='flex justify-end gap-2'>
-            <Button
-              type='button'
-              variant='outline'
-              onClick={handleCancel}
-            >
-              Cancel
-            </Button>
-            <Button
-              type='submit'
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <Loading size='sm' />
-              ) : isEditMode ? (
-                'Update'
-              ) : (
-                'Create'
-              )}
-            </Button>
+          <CardFooter className='flex justify-between gap-2'>
+            {isEditMode && (
+              <Button
+                type='button'
+                variant='destructive'
+                onClick={() => setShowDeleteDialog(true)}
+                disabled={isLoading}
+              >
+                Delete
+              </Button>
+            )}
+            <div className='flex justify-end gap-2'>
+              <Button
+                type='button'
+                variant='outline'
+                onClick={handleCancel}
+              >
+                Cancel
+              </Button>
+              <Button
+                type='submit'
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <Loading size='sm' />
+                ) : isEditMode ? (
+                  'Update'
+                ) : (
+                  'Create'
+                )}
+              </Button>
+            </div>
           </CardFooter>
         </form>
       </Card>
+
+      <AlertDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the
+              book from the library.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </motion.div>
   );
 }
